@@ -1,0 +1,4 @@
+read x;
+1: if x = 1 goto 2 else 3;
+2: return 2 + 4 - 8 + 16;
+3: return 3 - 3;
