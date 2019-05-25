@@ -104,7 +104,7 @@ class InterpreterKtTest {
     }
 
     @Test
-    fun `jump several variables`() {
+    fun `several variables`() {
         val code =
             """
                 read x, y, z;
@@ -114,5 +114,31 @@ class InterpreterKtTest {
             """.trimIndent()
 
         assertEquals(52, eval(code, 10, 20, 30))
+    }
+
+    @Test(expected = InterpreterException::class)
+    fun `incorrect label`() {
+        val code =
+            """
+                read x;
+                1: x := 2;
+                   goto 5;
+                2: return x;
+            """.trimIndent()
+
+        eval(code, 1)
+    }
+
+    @Test(expected = InterpreterException::class)
+    fun `incorrect variable`() {
+        val code =
+            """
+                read x;
+                1: y := 2;
+                   goto 5;
+                2: return x;
+            """.trimIndent()
+
+        eval(code, 1)
     }
 }
