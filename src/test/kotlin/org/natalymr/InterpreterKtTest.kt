@@ -104,6 +104,20 @@ class InterpreterKtTest {
     }
 
     @Test
+    fun `jump if else two expr`() {
+        val code =
+            """
+                read x;
+                1: if x - 2 + 1 = 1 + 13 - 2 goto 2 else 3;
+                2: return 2;
+                3: return 3;
+            """.trimIndent()
+
+        assertEquals(2, eval(code, 13))
+        assertEquals(3, eval(code, 2))
+    }
+
+    @Test
     fun `several variables`() {
         val code =
             """
@@ -140,5 +154,26 @@ class InterpreterKtTest {
             """.trimIndent()
 
         eval(code, 1)
+    }
+
+    @Test
+    fun Euclid() {
+        val code =
+            """
+                read x, y;
+                1: if x = y goto 7 else 2;
+                2: if x < y goto 5 else 3;
+                3: x := x - y;
+                   goto 1;
+                5: y := y - x;
+                   goto 1;
+                7: return x;
+            """.trimIndent()
+
+        assertEquals(6, eval(code, 12, 6))
+        assertEquals(16, eval(code, 64, 48))
+        assertEquals(3, eval(code, 111, 432))
+        assertEquals(1, eval(code, 661, 113))
+        assertEquals(21, eval(code, 1071, 462))
     }
 }
