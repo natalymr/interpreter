@@ -1,35 +1,27 @@
 package org.natalymr
 
-import org.antlr.v4.runtime.tree.TerminalNode
 import org.natalymr.interpreter.ImperativeLangBaseVisitor
-import org.natalymr.interpreter.ImperativeLangParser
 import org.natalymr.interpreter.ImperativeLangParser.*
 import java.io.InputStream
 import java.util.*
-import kotlin.collections.HashMap
 
-private data class BasicBlockInfo(
-    val label: LabelInfo,
-    val assignment: List<AssignmentContext>,
-    val jump: JumpContext
-)
-
-private data class LabelInfo(val value: String)
-
-private fun LabelContext.toLabelInfo() = LabelInfo(text)
+class InterpreterException(message: String) : Exception(message)
 
 class Interpreter(private val inputStream: InputStream) : ImperativeLangBaseVisitor<Int>() {
-
-    private val variableMap: HashMap<String, Int> = HashMap()
-    private val labelMap: HashMap<LabelInfo, BasicBlockInfo> = HashMap()
+    private val variableMap: MutableMap<String, Int> = mutableMapOf()
+    private val labelMap: MutableMap<LabelInfo, BasicBlockInfo> = mutableMapOf()
 
     override fun visitProgram(ctx: ProgramContext): Int {
         val scanner = Scanner(inputStream)
+
         for (it in ctx.read().variable()) {
-            variableMap[it.VARIABLE().text] = scanner.nextInt()
+            variableMap[it.text] = scanner.nextInt()
         }
 
-        val basicBlocks = ctx.basicBlock().map { BasicBlockInfo(it.label().toLabelInfo(), it.assignment(), it.jump()) }
+        val basicBlocks = ctx.basicBlock().map {
+            BasicBlockInfo(it.label().toLabelInfo(), it.assignment(), it.jump())
+        }
+
         basicBlocks.forEach {
             labelMap[it.label] = it
         }
@@ -42,48 +34,41 @@ class Interpreter(private val inputStream: InputStream) : ImperativeLangBaseVisi
             }
 
             if (currentBlock.jump.RETURN() != null) {
-                return visitExpression(currentBlock.jump.expression().single())
+                return visitExpression(currentBlock.jump.returnedExpression)
             }
 
-            currentBlock = myVisitJump(currentBlock.jump)
-                ?: throw RuntimeException("No label ${currentBlock.jump.text} in current program!")
+            currentBlock = getNextBasicBlock(currentBlock.jump)
+                ?: throw InterpreterException("No label ${currentBlock.jump.text} in current program!")
         }
     }
 
     override fun visitAssignment(ctx: AssignmentContext): Int {
-        val newValue = this.visitExpression(ctx.expression())
-        variableMap[ctx.variable().VARIABLE().text] = newValue
+        val newValue = visitExpression(ctx.expression())
+        variableMap[ctx.variable().text] = newValue
 
         return newValue
     }
 
-    private fun myVisitJump(ctx: JumpContext): BasicBlockInfo? {
-        // if
-        if (ctx.IF() != null) {
+    private fun getNextBasicBlock(ctx: JumpContext): BasicBlockInfo? {
+        if (ctx.IF() == null) return labelMap[ctx.gotoLabel.toLabelInfo()]
 
-            val success = if (ctx.right != null) {
-                val leftExpr = visitExpression(ctx.left)
-                val rightExpr = visitExpression(ctx.right)
+        val success = if (ctx.right != null) {
+            val leftExpr = visitExpression(ctx.left)
+            val rightExpr = visitExpression(ctx.right)
 
-                when (ctx.relop().text) {
-                    "<" -> leftExpr < rightExpr
-                    ">" -> leftExpr > rightExpr
-                    "=" -> leftExpr == rightExpr
-                    else -> throw RuntimeException("Unknown relational operator")
-                }
-
-            } else {
-                0 != visitExpression(ctx.left)
+            when (ctx.relop().text) {
+                "<" -> leftExpr < rightExpr
+                ">" -> leftExpr > rightExpr
+                "=" -> leftExpr == rightExpr
+                else -> throw InterpreterException("Unknown relational operator")
             }
 
-            if (success) {
-                return labelMap[ctx.label()[0].toLabelInfo()]
-            } else {
-                return labelMap[ctx.label()[1].toLabelInfo()]
-            }
-        } else { // goto
-            return labelMap[ctx.label().first().toLabelInfo()]
+        } else {
+            0 != visitExpression(ctx.left)
         }
+
+        val targetLabel = if (success) ctx.thenLabel else ctx.elseLabel
+        return labelMap[targetLabel.toLabelInfo()]
     }
 
     override fun visitExpression(ctx: ExpressionContext): Int {
@@ -100,7 +85,6 @@ class Interpreter(private val inputStream: InputStream) : ImperativeLangBaseVisi
     }
 
     override fun visitSignedVariable(ctx: SignedVariableContext): Int {
-
         if (ctx.PLUS() != null) {
             return visitSignedVariable(ctx.signedVariable())
         }
@@ -109,12 +93,22 @@ class Interpreter(private val inputStream: InputStream) : ImperativeLangBaseVisi
         }
 
         ctx.number()?.let { return it.text.toInt() }
+
         ctx.variable()?.let {
             return variableMap[it.text]
-                ?: throw RuntimeException("No such variable, ${it.text}")
+                ?: throw InterpreterException("No variable ${it.text} present")
         }
 
-        throw RuntimeException("incorrect visitSignedVariable")
+        throw InterpreterException("Unsupported equation ${ctx.text}")
     }
-
 }
+
+private data class BasicBlockInfo(
+    val label: LabelInfo,
+    val assignment: List<AssignmentContext>,
+    val jump: JumpContext
+)
+
+private data class LabelInfo(val value: String)
+
+private fun LabelContext.toLabelInfo() = LabelInfo(text)

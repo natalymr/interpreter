@@ -34,7 +34,8 @@ class InterpreterKtTest {
 
     @Test
     fun `heavy math`() {
-        val code = """
+        val code =
+            """
                 read x;
                 1: return x + 10 - 20 + 30;
             """.trimIndent()
@@ -50,11 +51,11 @@ class InterpreterKtTest {
     fun `jump goto`() {
         val code =
             """
-            read x;
-            1: x := 2;
-               goto 2;
-            2: return x;
-        """.trimIndent()
+                read x;
+                1: x := 2;
+                   goto 2;
+                2: return x;
+            """.trimIndent()
 
         assertEquals(2, eval(code, 10))
 
@@ -62,12 +63,13 @@ class InterpreterKtTest {
 
     @Test
     fun `jump if else EQ`() {
-        val code = """
-            read x;
-            1: if x = 1 goto 2 else 3;
-            2: return 2;
-            3: return 3;
-        """.trimIndent()
+        val code =
+            """
+                read x;
+                1: if x = 1 goto 2 else 3;
+                2: return 2;
+                3: return 3;
+            """.trimIndent()
 
         assertEquals(2, eval(code, 1))
         assertEquals(3, eval(code, 10))
@@ -75,12 +77,13 @@ class InterpreterKtTest {
 
     @Test
     fun `jump if else LT`() {
-        val code = """
-            read x;
-            1: if x < 5 goto 2 else 3;
-            2: return 2;
-            3: return 3;
-        """.trimIndent()
+        val code =
+            """
+                read x;
+                1: if x < 5 goto 2 else 3;
+                2: return 2;
+                3: return 3;
+            """.trimIndent()
 
         assertEquals(2, eval(code, 1))
         assertEquals(3, eval(code, 7))
@@ -88,12 +91,13 @@ class InterpreterKtTest {
 
     @Test
     fun `jump if else GT`() {
-        val code = """
-            read x;
-            1: if x > 5 goto 2 else 3;
-            2: return 2;
-            3: return 3;
-        """.trimIndent()
+        val code =
+            """
+                read x;
+                1: if x > 5 goto 2 else 3;
+                2: return 2;
+                3: return 3;
+            """.trimIndent()
 
         assertEquals(2, eval(code, 7))
         assertEquals(3, eval(code, 1))

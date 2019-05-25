@@ -2,7 +2,7 @@ grammar ImperativeLang;
 
 
 program
-   :  read basicBlock+ //expression relop expression
+   :  read basicBlock+
    ;
 
 read
@@ -18,19 +18,15 @@ assignment
    ;
 
 jump
-   : GOTO label SEMICOLON
-   | IF left=expression (relop right=expression)? GOTO label ELSE label SEMICOLON
-   | RETURN expression SEMICOLON
+   : GOTO gotoLabel=label SEMICOLON
+   | IF left=expression (relop right=expression)? GOTO thenLabel=label ELSE elseLabel=label SEMICOLON
+   | RETURN returnedExpression=expression SEMICOLON
    ;
 
 expression
    : signedVariable
    | left=expression (PLUS | MINUS) right=expression
    ;
-
-//multiplyingExpression
-//   : signedVariable ((TIMES | DIV) signedVariable)*
-//   ;
 
 signedVariable
    : PLUS signedVariable
